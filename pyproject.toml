@@ -1,3 +1,27 @@
 [build-system]
 requires = ['setuptools>=42']
 build-backend = 'setuptools.build_meta'
+
+[project]
+name = "ymaps"
+version = "0.2"
+license = {text = "MIT"}
+
+description = "Client for Yandex Maps API"
+readme = "README.md"
+
+urls = {Homepage = "https://github.com/sfkan6/ymaps"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+
+authors = [
+  { name ="sfkan6", email ="sfkan6@yandex.ru" },
+]
+
+dependencies = [
+	"requests==2.28.1",
+	"urllib3==1.26.12",
+]
+

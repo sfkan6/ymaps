@@ -4,12 +4,14 @@ from ymaps.yandex_maps import (
     GeocoderClient,
     StaticClient
 )
-from ymaps.exceptions import (
+
+from ymaps.settings import (
     InvalidKey,
     UnexpectedResponse,
     YandexSearchException,
     InvalidParameters
 )
+
 
 __all__ = [
     'BaseClient',

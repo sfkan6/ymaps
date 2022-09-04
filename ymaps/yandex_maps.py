@@ -1,13 +1,8 @@
 import requests
 
 from urllib.request import getproxies
-from .exceptions import InvalidKey, UnexpectedResponse, InvalidParameters
-
-
-class options:
-    default_scheme = 'https'                                                                                                                    
-    default_timeout = 1
-    default_proxies = None                                                                                                                      
+from .settings import options, InvalidKey, UnexpectedResponse, InvalidParameters
+from .settings import _Scheme, _Timeout, _Proxies, _list_f, _list_i, _list_s, _float_l
 
 
 class BaseClient:
@@ -24,9 +19,9 @@ class BaseClient:
     def __init__(
             self,
             api_key,
-            scheme=None,
-            timeout=None,
-            proxies=None
+            scheme:  _Scheme = None,
+            timeout: _Timeout = None,
+            proxies: _Proxies = None
     ):
         self.api_key = api_key
         self.scheme = scheme or options.default_scheme
@@ -34,7 +29,8 @@ class BaseClient:
         self.proxies = self._normalize_proxies(proxies)
         self.base_url = '%s://%s%s' % (self.scheme, self.DOMAIN, self.API_PATH)
 
-    def _normalize_proxies(self, proxies):
+    @staticmethod
+    def _normalize_proxies(proxies):
         """
         Normalizes a custom proxy
         Kind of custom proxy:
@@ -53,7 +49,7 @@ class BaseClient:
         normalized = {}
         for scheme, url in proxies.items():
             if url and '://' not in url:
-                url  = "http://%s" % url
+                url = "http://%s" % url
             normalized[scheme] = url
         return normalized
 
@@ -79,7 +75,7 @@ class BaseClient:
 
 
 class SearchClient(BaseClient):
-    """ 
+    """
     Yandex Place API client
     
     Documentation at:
@@ -89,12 +85,12 @@ class SearchClient(BaseClient):
     DOMAIN = 'search-maps.yandex.ru'
     API_PATH = '/v1/'
 
-    def __init__(self, api_key, scheme=None, timeout=None, proxies=None):
+    def __init__(self, api_key: str, scheme: _Scheme=None, timeout: _Timeout=None, proxies: _Proxies=None):
         super().__init__(api_key, scheme, timeout, proxies)
 
     def _collect(
             self,
-            address,
+            text,
             lang=None,
             type_objects=None,
             ll=None,
@@ -108,10 +104,10 @@ class SearchClient(BaseClient):
 
         params = {
             'apikey': self.api_key,
-            'text': address,
+            'text': text,
             'lang': 'ru_RU',
         }
-        
+
         if lang:
             params['lang'] = lang
         if type_objects:
@@ -128,52 +124,51 @@ class SearchClient(BaseClient):
             except:
                 raise InvalidParameters
         if rspn:
-            params['rspn'] = rspn
+            params['rspn'] = 1
         if results:
             params['results'] = results
         if skip:
             params['skip'] = skip
-
         return params
 
     def search(
             self,
-            address,
-            lang=None,
-            type_objects=None,
-            ll=None,
-            spn=None,
-            bbox=None,
-            rspn=None,
-            results=None,
-            skip=None,
+            text:   str,
+            lang:   str|None = None,
+            type_objects: str|None = None,
+            ll:     _list_f = None,
+            spn:    _list_f = None,
+            bbox:   _list_f = None,
+            rspn:   bool|None = None,
+            results: int|None = None,
+            skip:   int|None = None,
     ):
         """ Get geo objects and organizations"""
         params = self._collect(
-                address,lang,type_objects,
-                ll, spn, bbox, rspn, results, skip
+                text=text, lang=lang, type_objects=type_objects,
+                ll=ll, spn=spn, bbox=bbox, rspn=rspn,
+                results=results, skip=skip
         )
         return self._request(params).json()
 
 
 class GeocoderClient(BaseClient):
-    """ 
+    """
     Yandex Geocoder API client
 
     Documentation at:
         https://yandex.ru/dev/maps/geocoder/doc/desc/concepts/input_params.html
     """
 
-
     DOMAIN = 'geocode-maps.yandex.ru'
     API_PATH = '/1.x/'
 
-    def __init__(self, api_key, scheme=None, timeout=None, proxies=None):
+    def __init__(self, api_key, scheme:_Scheme=None, timeout:_Timeout=None, proxies:_Proxies=None):
         super().__init__(api_key, scheme, timeout, proxies)
     
     def _collect(
             self,
-            address,
+            geocode,
             sco=None,
             kind=None,
             rspn=None,
@@ -183,13 +178,13 @@ class GeocoderClient(BaseClient):
             form=None,
             results=None,
             skip=None,
-            lang=None 
+            lang=None
     ):
         """ Collects request parameters """
 
         params = {
             'apikey': self.api_key,
-            'geocode': address,
+            'geocode': geocode,
             'format': 'json'
         }
 
@@ -198,7 +193,7 @@ class GeocoderClient(BaseClient):
         if kind:
             params['kind'] = kind
         if rspn:
-            params['rspn'] = rspn
+            params['rspn'] = 1
         if ll and spn:
             try:
                 params['ll'] = f'{ll[0]},{ll[1]}'
@@ -223,52 +218,51 @@ class GeocoderClient(BaseClient):
 
     def geocode(
             self,
-            address,
-            sco=None,
-            kind=None,
-            rspn=None,
-            ll=None,
-            spn=None,
-            bbox=None,
-            form=None,
-            results=None,
-            skip=None,
-            lang=None
+            address: str,
+            rspn:   bool|None = None,
+            ll:     _list_f = None,
+            spn:    _list_f = None,
+            bbox:   _list_f = None,
+            form:   str|None = None,
+            results: int|None = None,
+            skip:   int|None = None,
+            lang:   str|None = None
     ):
         """ Search for geocoordinates """
 
         params = self._collect(
-                address, sco, kind,
-                rspn, ll, spn, bbox,
-                form, results, skip, lang
+                geocode=address,rspn=rspn,
+                ll=ll, spn=spn, bbox=bbox,
+                form=form, results=results,
+                skip=skip, lang=lang
         )
         return self._request(params).json()
 
     def reverse(
             self,
-            geocode,
-            sco=None,
-            kind=None,
-            rspn=None,
-            ll=None,
-            spn=None,
-            bbox=None,
-            form=None,
-            results=None,
-            skip=None,
-            lang=None
+            geocode: _float_l,
+            sco:    str|None = None,
+            kind:   str|None = None,
+            rspn:   bool|None = None,
+            ll:     _list_f = None,
+            spn:    _list_f = None,
+            bbox:   _list_f = None,
+            form:   str|None = None,
+            results: int|None = None,
+            skip:   int|None = None,
+            lang:   str|None = None
     ):
         """ Search for an object by geocoordinates """
 
         try:
-            geocode = f'{geocode[0]},{geocode[1]}'
+            geodata = '{},{}'.format(geocode[1], geocode[0])
         except:
             raise InvalidParameters
 
         params = self._collect(
-                geocode, sco, kind,
-                rspn, ll, spn, bbox,
-                form, results, skip, lang
+                geocode=geodata, sco=sco, kind=kind,
+                rspn=rspn, ll=ll, spn=spn, bbox=bbox,
+                form=form, results=results, skip=skip, lang=lang
         )
         return self._request(params).json()
 
@@ -284,7 +278,7 @@ class StaticClient(BaseClient):
     DOMAIN = 'static-maps.yandex.ru'
     API_PATH = '/1.x/'
 
-    def __init__(self, api_key=None, scheme=None, timeout=None, proxies=None):
+    def __init__(self, api_key=None, scheme: _Scheme=None, timeout: _Timeout=None, proxies: _Proxies=None):
         super().__init__(api_key, scheme, timeout, proxies)
 
     def _collect(
@@ -304,7 +298,7 @@ class StaticClient(BaseClient):
         params = {}
         if self.api_key:
             params['key'] = self.api_key
-        
+
         try:
             params['l'] = ','.join(l)
             params['ll'] = f'{ll[0]},{ll[1]}'
@@ -329,26 +323,25 @@ class StaticClient(BaseClient):
  
     def getimage(
             self,
-            l,
-            ll,
-            spn=None,
-            z=None,
-            size=None,
-            scale=None,
-            pt=None,
-            pl=None,
-            lang=None
+            l:      _list_s,
+            ll:     _float_l,
+            spn:    _list_f = None,
+            z:      int|None = None,
+            size:   _list_i = None,
+            scale:  float|None = None,
+            pt:     _list_s = None,
+            pl:     _list_s =None,
+            lang:   str|None = None
     ):
-        """ 
-        Returns an image according to the given parameters 
+        """
+        Returns an image according to the given parameters
         Save image:
             >>> with open('file.png', "wb") as file:
             >>>     file.write(response.content)
-
-        """        
+        """
         params = self._collect(
-            l, ll, spn, z, size,
-            scale, pt, pl, lang
+            l=l, ll=ll, spn=spn, z=z, size=size,
+            scale=scale, pt=pt, pl=pl, lang=lang
         )
-        return self._request(params)
+        return self._request(params).content
 
