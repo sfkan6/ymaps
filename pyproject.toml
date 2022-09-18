@@ -1,27 +1,25 @@
 [build-system]
-requires = ['setuptools>=42']
-build-backend = 'setuptools.build_meta'
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
 
 [project]
 name = "ymaps"
-version = "0.2"
-license = {text = "MIT"}
-
-description = "Client for Yandex Maps API"
 readme = "README.md"
-
-urls = {Homepage = "https://github.com/sfkan6/ymaps"}
+license = {file = "LICENSE"}
+dynamic = ["version", "description"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
 ]
-
 authors = [
-  { name ="sfkan6", email ="sfkan6@yandex.ru" },
+    {name ="sfkan6", email ="sfkan6@yandex.ru"}
 ]
 
-dependencies = [
-	"requests==2.28.1",
-	"urllib3==1.26.12",
-]
+requires-python = ">=3.7"
+dependencies = ["httpx>=0.23.0"]
+
+
+[project.urls]
+Home = "https://github.com/sfkan6/ymaps"
+
 

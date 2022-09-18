@@ -1,27 +1,36 @@
-from ymaps.yandex_maps import (
-    BaseClient,
-    SearchClient,
-    GeocoderClient,
-    StaticClient
+"""
+Client for Yandex Maps API
+"""
+
+from ymaps.sync import BaseClient, SearchClient, GeocodeClient, StaticClient
+
+from ymaps.asynchr import (
+    BaseAsyncClient as BaseAsync,
+    SearchAsyncClient as SearchAsync,
+    GeocodeAsyncClient as GeocodeAsync,
+    StaticAsyncClient as StaticAsync,
 )
 
 from ymaps.settings import (
     InvalidKey,
     UnexpectedResponse,
     YandexSearchException,
-    InvalidParameters
+    InvalidParameters,
 )
 
 
+__version__ = "1.1"
 __all__ = [
-    'BaseClient',
-    'SearchClient',
-    'GeocoderClient',
-    'StaticClient',
-
-    'InvalidKey',
-    'UnexpectedResponse',
-    'YandexSearchException',
-    'InvalidParameters'
+    "BaseClient",
+    "SearchClient",
+    "GeocodeClient",
+    "StaticClient",
+    "BaseAsync",
+    "SearchAsync",
+    "GeocodeAsync",
+    "StaticAsync",
+    "InvalidKey",
+    "UnexpectedResponse",
+    "YandexSearchException",
+    "InvalidParameters",
 ]
-
