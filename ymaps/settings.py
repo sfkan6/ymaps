@@ -1,26 +1,12 @@
 """
-Settings and Exceptions for ymaps
+Default Settings for ymaps
 """
 
-
-# Default options
-class options:
-    default_timeout = 1
-    default_lang = "ru_RU"
+from typing import Dict
 
 
-# Exception
-class YandexSearchException(Exception):
-    pass
-
-
-class UnexpectedResponse(YandexSearchException):
-    pass
-
-
-class InvalidKey(YandexSearchException):
-    pass
-
-
-class InvalidParameters(YandexSearchException):
-    pass
+class DefaultSettings:
+    timeout = 1
+    language = "ru_RU"
+    suggest_language = "ru"
+    client_settings: Dict = {}

@@ -1,22 +1,22 @@
 .DEFAULT_GOAL := help
 .ONESHELL:
-.PHONY: changelog coverage deps help lint push test venv
+.PHONY:
 
+
+deps:	## Install development dependencies
+	python -m pip install -r requirements-dev.txt black
+
+lint:	## Lint and static-check
+	flake8 --max-line-length 100 ymaps
+	mypy ymaps
+
+test:	## Run tests
+	pytest -ra
 
 coverage:	## Run tests with coverage
 	coverage erase
 	coverage run --include=ymaps/* -m pytest -ra
 	coverage report -m
-
-check:	## Lint and static-check
-	flake8 --max-line-length 90 ymaps
-	mypy ymaps
-
-deps:	## Install dependencies
-	python -m pip install -r requirements-test.txt black
-
-test:	## Run tests
-	pytest -ra
 
 tox:	## Run tox
 	tox

@@ -1,15 +1,18 @@
 """
-Synchronous Client for Yandex Maps API
+Asynchronous Client for Yandex Maps API
 """
 
-from typing import Dict, List, Optional
 from httpx import AsyncClient
-from ymaps.settings import options, InvalidKey, UnexpectedResponse, InvalidParameters
+from typing import Dict, List, Optional
+
+from ymaps.settings import DefaultSettings
+from ymaps.exceptions import Exceptions
+from ymaps.api_parameters import ParameterCollector
 
 
 class BaseAsyncClient:
     """
-    Base class for Yandex API client
+    Base class for Async Yandex API client
 
     Documentation at:
         https://yandex.ru/dev/maps/mapsapi/
@@ -18,163 +21,158 @@ class BaseAsyncClient:
     def __init__(
         self,
         base_url: str,
-        api_key: Optional[str],
-        timeout: Optional[int] = options.default_timeout,
-        lang: Optional[str] = None,
-    ) -> None:
-        params = {"lang": lang or options.default_lang}
-        if api_key:
-            params["apikey"] = api_key
-
+        api_key: str,
+        language: Optional[str] = DefaultSettings.language,
+        timeout: Optional[int] = DefaultSettings.timeout,
+    ):
+        client_settings = {"apikey": api_key, "lang": language}
         self._client = AsyncClient(
-            params=params,
+            base_url=base_url,
+            params=client_settings,
             timeout=timeout,
         )
-        self.base_url = base_url
 
-    async def __aenter__(self) -> "BaseAsyncClient":
+    async def _get(self, request_parameters):
+        response = await self._client.get(".", params=request_parameters)
+        return Exceptions(response).get_exception_or_response()
+
+    async def close(self):
+        await self._client.aclose()
+
+    async def __aenter__(self):
         return self
 
     async def __aexit__(self, exc_type, exc_val, tb):
         await self.close()
 
-    async def _request(self, params):
-        """Fulfills the request"""
-        response = await self._client.get(
-            self.base_url,
-            params=params,
-        )
 
-        if response.status_code == 200:
-            return response
-        elif response.status_code == 400:
-            raise InvalidParameters
-        elif response.status_code == 403:
-            raise InvalidKey
-        else:
-            raise UnexpectedResponse(
-                f"status_code={response.status_code}\nurl={response.url}"
-            )
-
-    async def _collect(self, **kwargs):
-        """Collects request parameters"""
-        params = kwargs
-
-        if params.get("ll"):
-            ll = params["ll"]
-            params["ll"] = f"{ll[0]},{ll[1]}"
-        if params.get("spn"):
-            spn = params["spn"]
-            params["spn"] = f"{spn[0]},{spn[1]}"
-        if params.get("bbox"):
-            bbox = params["bbox"]
-            params["bbox"] = f"{bbox[0]},{bbox[1]}~{bbox[2]},{bbox[3]}"
-        if params.get("rspn"):
-            params["rspn"] = 1
-        return params
-
-    async def close(self):
-        await self._client.aclose()
-
-
-class SearchAsyncClient(BaseAsyncClient):
+class SearchAsyncClient(BaseAsyncClient, ParameterCollector):
     """
-    Yandex Place API client
+    Async Yandex Place API client
 
     Documentation at:
-        https://yandex.ru/dev/maps/geosearch/doc/concepts/request.html
+        https://yandex.ru/dev/geosearch/doc/ru/
     """
 
-    BASE_URL = "https://search-maps.yandex.ru/v1/"
-
-    def __init__(
-        self, api_key: str, timeout: Optional[int] = None, lang: Optional[str] = None
-    ) -> None:
-        super().__init__(self.BASE_URL, api_key, timeout, lang)
-
-    async def search(self, query: str, **kwargs) -> Dict:
-        """Get geo objects and organizations"""
-        params = await self._collect(text=query, **kwargs)
-        response = await self._request(params)
-        return response.json()
-
-
-class GeocodeAsyncClient(BaseAsyncClient):
-    """
-    Yandex Geocoder API client
-
-    Documentation at:
-        https://yandex.ru/dev/maps/geocoder/doc/desc/concepts/input_params.html
-    """
-
-    BASE_URL = "https://geocode-maps.yandex.ru/1.x/"
-
-    def __init__(
-        self, api_key: str, timeout: Optional[int] = None, lang: Optional[str] = None
-    ) -> None:
-        super().__init__(self.BASE_URL, api_key, timeout, lang)
-
-    async def _collect(self, **kwargs):
-        data = {"format": "json"}
-        data.update(kwargs)
-        params = await super()._collect(**data)
-        return params
-
-    async def geocode(self, geocode: str, **kwargs) -> Dict:
-        """Search for geocoordinates"""
-        params = await self._collect(geocode=geocode, **kwargs)
-        response = await self._request(params)
-        return response.json()
-
-    async def reverse(self, geocode: List, **kwargs) -> Dict:
-        """Search for an object by geocoordinates"""
-        params = await self._collect(geocode=f"{geocode[0]},{geocode[1]}", **kwargs)
-        response = await self._request(params)
-        return response.json()
-
-
-class StaticAsyncClient(BaseAsyncClient):
-    """
-    Yandex Static API client
-
-    Documentation at:
-        https://yandex.ru/dev/maps/staticapi/doc/1.x/dg/concepts/input_params.html
-    """
-
-    BASE_URL = "https://static-maps.yandex.ru/1.x/"
+    BASE_URL = "https://search-maps.yandex.ru/v1"
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        timeout: Optional[int] = None,
-        lang: Optional[str] = None,
+        api_key: str,
+        language: Optional[str] = DefaultSettings.language,
+        timeout: Optional[int] = DefaultSettings.timeout,
+    ):
+        super().__init__(self.BASE_URL, api_key, language, timeout)
+
+    async def search(self, text: str, **params) -> Dict:
+        """Search for a geographical object or organization"""
+        request_parameters = super()._collect_request_parameters(text=text, **params)
+        response = await self._get(request_parameters)
+        return response.json()
+
+
+class GeocodeAsyncClient(BaseAsyncClient, ParameterCollector):
+    """
+    Async Yandex Geocoder API client
+
+    Documentation at:
+        https://yandex.ru/dev/geocode/doc/ru/
+    """
+
+    BASE_URL = "https://geocode-maps.yandex.ru/1.x"
+
+    def __init__(
+        self,
+        api_key: str,
+        language: Optional[str] = DefaultSettings.language,
+        timeout: Optional[int] = DefaultSettings.timeout,
     ) -> None:
-        super().__init__(self.BASE_URL, api_key, timeout, lang)
+        super().__init__(self.BASE_URL, api_key, language, timeout)
 
-    async def _collect(self, **kwargs):
-        data = {"l": ["sat"]}
-        data.update(kwargs)
-        params = await super()._collect(**data)
+    async def geocode(self, geocode: str, **params) -> Dict:
+        """Search for geographical coordinates of objects"""
+        request_parameters = await self._collect_request_parameters(
+            geocode=geocode, **params
+        )
+        return await self._get(request_parameters)
 
-        params["l"] = ",".join(params["l"])
-        if params.get("size"):
-            size = params["size"]
-            params["size"] = f"{size[0]},{size[1]}"
-        if params.get("pt"):
-            pt = params["pt"]
-            params["pt"] = "~".join(pt)
-        if params.get("pl"):
-            pl = params["pl"]
-            params["pl"] = "~".join(pl)
-        return params
+    async def reverse(self, geocode: List, **params) -> Dict:
+        """Search for objects by geographical coordinates"""
+        request_parameters = await self._collect_reverse_parameters(geocode, **params)
+        return await self._get(request_parameters)
 
-    async def getimage(self, ll: List, **kwargs) -> bytes:
+    async def _get(self, request_parameters):
+        result = await super()._get(request_parameters)
+        if request_parameters["format"] == "json" and not request_parameters.get(
+            "callback"
+        ):
+            return result.json()
+        return result.text
+
+    async def _collect_reverse_parameters(self, geocode, **params):
+        request_parameters = await self._collect_request_parameters(
+            reverse=geocode, **params
+        )
+        request_parameters["geocode"] = request_parameters.pop("reverse")
+        return request_parameters
+
+    async def _collect_request_parameters(self, **params):
+        params["format"] = params.get("format", "json")
+        return super()._collect_request_parameters(**params)
+
+
+class SuggestAsyncClient(BaseAsyncClient, ParameterCollector):
+    """
+    Async Yandex Suggest API client
+
+    Documentation at:
+        https://yandex.ru/dev/geosuggest/doc/ru/
+    """
+
+    BASE_URL = "https://suggest-maps.yandex.ru/v1/suggest"
+
+    def __init__(
+        self,
+        api_key: str,
+        language: Optional[str] = DefaultSettings.suggest_language,
+        timeout: Optional[int] = DefaultSettings.timeout,
+    ):
+        super().__init__(self.BASE_URL, api_key, language, timeout)
+
+    async def suggest(self, text: str, **params) -> Dict:
+        """Get suggestions based on search results"""
+        request_parameters = self._collect_request_parameters(text=text, **params)
+        response = await self._get(request_parameters)
+        return response.json()
+
+
+class StaticAsyncClient(BaseAsyncClient, ParameterCollector):
+    """
+    Async Yandex Static API client
+
+    Documentation at:
+        https://yandex.ru/dev/staticapi/doc/ru/
+    """
+
+    BASE_URL = "https://static-maps.yandex.ru/v1"
+
+    def __init__(
+        self,
+        api_key: str,
+        language: Optional[str] = DefaultSettings.language,
+        timeout: Optional[int] = DefaultSettings.timeout,
+    ):
+        super().__init__(self.BASE_URL, api_key, language, timeout)
+
+    async def get_image(self, **params) -> bytes:
         """
         Returns an image according to the given parameters
         Save image:
-            >>> with open('file.png', "wb") as file:
-            >>>     file.write(response.content)
+            >>> response = StaticClient('api_key').get_image(...)
+            >>> with open('file.png', 'wb') as file:
+            >>>     file.write(response)
+
         """
-        params = await self._collect(ll=ll, **kwargs)
-        response = await self._request(params)
+        params = self._collect_request_parameters(**params)
+        response = await self._get(params)
         return response.content
