@@ -4,11 +4,14 @@
 
 
 deps:	## Install development dependencies
-	python -m pip install -r requirements-dev.txt black
+	python -m pip install -r requirements-dev.txt
 
 lint:	## Lint and static-check
 	flake8 --max-line-length 100 ymaps
 	mypy ymaps
+
+format: ## Format the code
+	black ymaps tests
 
 test:	## Run tests
 	pytest -ra

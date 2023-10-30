@@ -21,11 +21,14 @@ class BaseAsyncClient:
     def __init__(
         self,
         base_url: str,
-        api_key: str,
+        api_key: Optional[str] = None,
         language: Optional[str] = DefaultSettings.language,
         timeout: Optional[int] = DefaultSettings.timeout,
     ):
-        client_settings = {"apikey": api_key, "lang": language}
+        client_settings = {"lang": language}
+        if api_key:
+            client_settings["apikey"] = api_key
+
         self._client = AsyncClient(
             base_url=base_url,
             params=client_settings,
@@ -158,11 +161,21 @@ class StaticAsyncClient(BaseAsyncClient, ParameterCollector):
 
     def __init__(
         self,
-        api_key: str,
+        api_key: Optional[str] = None,
         language: Optional[str] = DefaultSettings.language,
         timeout: Optional[int] = DefaultSettings.timeout,
+        url: str = DefaultSettings.static_url,
     ):
+        if url == "1.x":
+            self.BASE_URL = self.BASE_URL.replace(DefaultSettings.static_url, "1.x//")
+
         super().__init__(self.BASE_URL, api_key, language, timeout)
+
+    async def load_image(self, path, **params):
+        content = await self.get_image(**params)
+        with open(path, "wb") as file:
+            file.write(content)
+        return content
 
     async def get_image(self, **params) -> bytes:
         """

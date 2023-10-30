@@ -252,6 +252,20 @@ def test_get_image(httpx_mock: HTTPXMock):
     assert actual.decode() == f'"{expected}"'
 
 
+def test_url_static_client(httpx_mock: HTTPXMock):
+    request = [37.611347, 55.760241]
+    params = {"l": ["sat", "skl"]}
+    expected = "test_get_image"
+    httpx_mock.add_response(
+        method="GET",
+        url=f"https://static-maps.yandex.ru/1.x/?apikey=api_key&lang=ru_RU"
+        f"&ll={request[0]},{request[1]}&l=sat,skl",
+        json=expected,
+    )
+    actual = StaticClient("api_key", url="1.x").get_image(ll=request, **params)
+    assert actual.decode() == f'"{expected}"'
+
+
 def test_get_image_by_all_parameters(httpx_mock: HTTPXMock):
     request = [37.611347, 55.760241]
     params = {

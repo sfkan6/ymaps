@@ -8,7 +8,7 @@
 Синхронные и Асинхронные:
 
 * Search, SearchAsync - [Поиск по организациям](https://yandex.ru/dev/maps/geosearch/?from=mapsapi)
-* Geocoder, GeocodeAsync - [Геокодер](https://yandex.ru/dev/maps/geocoder/?from=mapsapi)
+* Geocode, GeocodeAsync - [Геокодер](https://yandex.ru/dev/maps/geocoder/?from=mapsapi)
 * Suggest, SuggestAsync - [Геосаджест](https://yandex.ru/dev/maps/geosuggest/)
 * Static, StaticAsync - [Static API](https://yandex.ru/dev/maps/staticapi/?from=mapsapi)
 
@@ -36,13 +36,11 @@ pip install ymaps
 > Все необязяательные аргументы должны передаваться по имени
 
 
-### Параметры клиентов
 
-#### Аргументы:
+### Параметры клиентов:
  - api_key*, [получить ключ](https://developer.tech.yandex.ru/)
  - language, язык ответа, по умолчанию русский (ru_RU)
  - timeout, таймаут запроса, по умолчанию 1 секунда
-
 
 #### Примеры:
 ```
@@ -54,16 +52,17 @@ Geocode('api_key')
 
 # api_key = 'api_key', language = 'tr_TR', timeout = 1
 Suggest('api_key').suggest(text, lang='tr_TR')
+
 ```
 
 
 ### [Search](https://yandex.ru/dev/geosearch/doc/ru/request)
 
-Поиска по организациям и географическим объектам (топонимы), [формат ответа](https://yandex.ru/dev/geosearch/doc/ru/response).
+Поиска по организациям и географическим объектам (топонимы).
 
 #### search()
 
-Выполняет поиск по организациям или топонимам.
+Выполняет поиск по организациям или топонимам, [формат ответа](https://yandex.ru/dev/geosearch/doc/ru/response).
 
 - __text*__- текст поискового запроса
 - __lang__ - язык ответа, по умолчанию ru_RU
@@ -119,11 +118,11 @@ await client.search('ООО Яндекс', lang='ru_RU')
 
 ### [Geocode](https://yandex.ru/dev/geocode/doc/ru/request)
 
-Прямое и обратное геокодирование, [формат ответа](https://yandex.ru/dev/geocode/doc/ru/response).
+Прямое и обратное геокодирование.
 
 #### geocode()
 
-Преобразует адрес в координаты объекта.
+Преобразует адрес в координаты объекта, [формат ответа](https://yandex.ru/dev/geocode/doc/ru/response).
 
 - __geocode*__ - текст поискового запроса
 - __ll__ - центр области поиска
@@ -175,11 +174,11 @@ await client.geocode('Санкт-Петербург, ул. Блохина, 15')
 
 ### [Suggest](https://yandex.ru/dev/geosuggest/doc/ru/request)
 
-Позволяет получать предложения поисковой выдачи во время поиска географических объектов и/или организаций, [формат ответа](https://yandex.ru/dev/geosuggest/doc/ru/response).
+Позволяет получать предложения поисковой выдачи во время поиска географических объектов и/или организаций.
 
 #### suggest()
 
-Выполняет поиск по организациям или топонимам.
+Выполняет поиск географических объектов и/или организаций, [формат ответа](https://yandex.ru/dev/geosuggest/doc/ru/response).
 
 - __text*__- текст поискового запроса
 - __lang__ - язык ответа в формате [ISO 639-1](https://www.loc.gov/standards/iso639-2/php/code_list.php), по умолчанию ru
@@ -226,13 +225,41 @@ await client.search('ООО Яндекс', lang='ru_RU')
 
 Формирует изображение схемы карты
 
+Static имеет дополнительный параметр - url.
+
+- __api_key__ - при __url = 1.x__ необязателен
+- __url__ - определяет адрес запроса, значения: v1, 1.x. При запросе на 1.x есть возможность указать перечень слоёв карты - l.
+
+```
+# url='v1' (on default)
+# BASE_URL = 'https://static-maps.yandex.ru/v1'
+Static()
+
+# url='1.x
+# 'BASE_URL = 'https://static-maps.yandex.ru/1.x'
+Static(url='1.x')
+```
+
+#### load_image()
+
+Сохраняет найденное изображение карт.
+
+- __path*__, путь к файлу
+- ..., то же что и в __get_image__
+
+```
+client = Static(url='1.x')                                                                                                                              
+client.load_image(path='file.png', l=['sat', 'skl'], ll=[37.620070, 55.753630]) 
+```
+
 #### get_image()
 
-Формирует изображение схемы карты в соответствии со значениями параметров,
+Формирует изображение карты в соответствии со значениями параметров,
 возвращает bytes. 
 
 __*__ - __ll__ или __bbox__
 
+- __l*, (только для url='1.x')__ перечень слоев, определяющих тип карты: map (схема), sat (спутник), sat,skl (гибрид), trf (Слой пробок)
 - __ll__ - центр области поиска, долгота и широта центра карты в градусах
 - __bbox__ - альтернативный способ задания области поиска, при одновременном задании bbox и ll+spn параметр bbox является более приоритетным. Границы области поиска задаются в виде географических координат левого нижнего и правого верхнего углов области.
 - __spn__ - протяженность области показа карты по долготе и широте (в градусах)
@@ -242,42 +269,47 @@ __*__ - __ll__ или __bbox__
 - __pt__ - содержит описание одной или нескольких меток, которые требуется отобразить на карте
 - __pl__ - Содержит набор описаний геометрических фигур (ломаных и многоугольников), которые требуется отобразить на карте
 
+
 #### Примеры:
 
 ```
 client = Static()
 
 # ll
-client.getimage(ll=[37.620070, 55.753630])
+client.get_image(ll=[37.620070, 55.753630])
 
 # spn
-client.getimage(ll=[37.620070, 55.753630], spn=[0.02, 0.02])
+client.get_image(ll=[37.620070, 55.753630], spn=[0.02, 0.02])
 
 # bbox
-client.getimage(bbox=[30.03, 59.85, 30.49, 60.10])
+client.get_image(bbox=[30.03, 59.85, 30.49, 60.10])
 
 # z scale
-client.getimage(ll=[37.620070, 55.753630], z=12, scale=2.5)
+client.get_image(ll=[37.620070, 55.753630], z=12, scale=2.5)
 
 # size 
-client.getimage(ll=[37.620070, 55.753630], size=[450, 450])
+client.get_image(ll=[37.620070, 55.753630], size=[450, 450])
 
 # pt
-client.getimage(ll=[37.620070, 55.753630], pt=[
+client.get_image(ll=[37.620070, 55.753630], pt=[
 	'37.620070,55.753630,pmwtm1', 
 	'37.62006,55.753632,pmwtm2'
 ])
 
 # pl
-client.getimage(ll=[37.620070, 55.753630], pl=[
+client.get_image(ll=[37.620070, 55.753630], pl=[
 	'c:ec473fFF,f:00FF00A0,w:5,37.51,55.83', 
 	'c:ec473fFF,f:00FF00A0,w:5,37.49,55.70,37.51,55.83'
 ])
 
+# l
+client = Static(url='1.x')
+client.get_image(ll=[37.620070, 55.753630], l=['sat', 'skl'])
+
 
 # asynchronous
 client = StaticAsync()
-await client.getimage(ll=[37.620070, 55.753630])
+await client.get_image(ll=[37.620070, 55.753630])
 ```
 
 Сохраните изображение:
@@ -288,16 +320,16 @@ with open('file.png', "wb") as f:
 	f.write(response)
 ```
 
-## Development setup
+## Настройка разработки
 
 ```sh
-$ python3 -m venv venv
+$ python -m venv venv
 $ . venv/bin/activate
 $ make deps
 $ tox
 ```
 
-## License
+## Лицензия
 
 [MIT](https://choosealicense.com/licenses/mit/)
 

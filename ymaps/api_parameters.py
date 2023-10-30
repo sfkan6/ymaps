@@ -4,7 +4,7 @@ API Parameter Collector for ymaps
 
 
 class ParameterCollector:
-    params_separate_by_comma = ["ll", "spn", "size", "types", "ull", "reverse"]
+    params_separate_by_comma = ["ll", "spn", "size", "types", "ull", "reverse", "l"]
     params_separate_by_tilda = ["pt", "pl"]
     params_bool_values = ["rspn", "highlight", "strict_bounds", "print_address"]
 
